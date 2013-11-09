@@ -1,6 +1,6 @@
 set(PROJECT tests)
 
-find_package(Boost COMPONENTS system filesystem unit_test_framework REQUIRED)
+find_package(Boost COMPONENTS  system filesystem unit_test_framework chrono REQUIRED)
 
 set(SOURCES
 	main.cpp
@@ -23,6 +23,10 @@ target_link_libraries (tests_lowlevel ${LIBS} ${Boost_LIBRARIES})
 
 add_executable (tests_hilevel hi_level.cpp main.cpp)
 target_link_libraries (tests_hilevel boolcalc ${Boost_LIBRARIES})
+
+add_executable (performance_test performance_test.cpp)
+target_link_libraries (performance_test ${LIBS} ${Boost_LIBRARIES})
+
 
 
 enable_testing()

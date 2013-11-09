@@ -43,6 +43,10 @@ BOOST_AUTO_TEST_CASE(lili128_fd)
 	boost::dynamic_bitset<> x(10, 0x0AAAAA);
 	BOOST_CHECK_NO_THROW(fd.calculate(x));
 	BOOST_CHECK_EQUAL(fd.calculate(x), 1);
+
+	BOOST_CHECK_NO_THROW(fd.calculateRPN(x));
+	BOOST_CHECK_EQUAL(fd.calculateRPN(x), 1);
+
 }
 
 
