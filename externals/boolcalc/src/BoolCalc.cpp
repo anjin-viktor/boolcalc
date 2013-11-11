@@ -63,14 +63,13 @@ void createListOfMonoms(const std::shared_ptr<bcc::Node> &root, std::list<Monom>
 			constValue = std::dynamic_pointer_cast<bcc::Const>(root) -> m_value;
 		else
 		{
-			const std::shared_ptr<bcc::Var> var = std::dynamic_pointer_cast<bcc::Var>(root);
+			const std::shared_ptr<bcc::Var> var = std::dynamic_pointer_cast<bcc::Var>(*itr);
 
 			Monom monom;
-			monom.first = boost::dynamic_bitset<>(bitsSize);
-			monom.second = boost::dynamic_bitset<>(bitsSize);
 			monom.first[var -> m_varId] = true;
 			monoms.push_back(monom);
 		}
+
 	}
 
 	for(;itr != root -> m_childs.end(); itr++)
@@ -100,8 +99,6 @@ void createListOfMonoms(const std::shared_ptr<bcc::Node> &root, std::list<Monom>
 			if(const_ -> m_value)
 				constValue = !constValue;
 		}
-		else
-			createListOfMonoms(*itr, monoms, constValue, bitsSize);
 	}
 }
 
@@ -120,23 +117,22 @@ static void getBitsSize(const std::shared_ptr<bcc::Node> &node, std::size_t &siz
 }
 
 
-static bool execListOfMonoms(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &values)
+static bool execListOfMonoms(FunctionCalculatorImpl *m_pimpl, const boost::dynamic_bitset<> &values)
 {
-	std::list<Monom>::const_iterator itr = pimpl -> m_monoms.begin();
+	std::list<Monom>::const_iterator itr = m_pimpl -> m_monoms.begin();
 
-	bool result = pimpl -> m_constValue;
+	bool result = m_pimpl -> m_constValue;
 
-	if(itr != pimpl -> m_monoms.end() && itr -> first.size() > values.size())
-		throw std::runtime_error("vector of values is too smal");
-
-	for(;itr != pimpl -> m_monoms.end(); itr++)
+	for(;itr != m_pimpl -> m_monoms.end(); itr++)
+	{
 		if(itr -> first.is_subset_of(values) && !itr -> second.intersects(values))
 			result = !result;
+	}
 	return result;
 }
 
 
-bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionType type, int monomSize)
+bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionType type)
 {
 	std::string expr = expression;
 	BoolExprParser<std::string::iterator> parser;
@@ -158,17 +154,6 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 		std::size_t bitsSize = 0;
 		getBitsSize(pimpl -> m_root, bitsSize);
 		createListOfMonoms(pimpl -> m_root, pimpl -> m_monoms, pimpl -> m_constValue, bitsSize);
-
-		if(monomSize >= 0)
-		{
-			std::list<Monom>::iterator itr = pimpl -> m_monoms.begin();
-
-			for(;itr != pimpl -> m_monoms.end(); itr++)
-			{
-				itr -> first.resize(monomSize);
-				itr -> second.resize(monomSize);
-			}
-		}			
 	}
 }
 
@@ -219,13 +204,4 @@ bool bcc::Function::calculate(const boost::dynamic_bitset<> &values) const throw
 		return pimpl -> m_root -> exec(values);
 	else
 		return execListOfMonoms(pimpl, values);
-}
-
-
-
-std::size_t bcc::Function::getNumberOfVars() const
-{
-	std::size_t bitsSize = 0;
-	getBitsSize(((FunctionCalculatorImpl *) m_pimpl) -> m_root, bitsSize);
-	return bitsSize;
 }
