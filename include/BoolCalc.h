@@ -23,13 +23,15 @@ namespace bcc
 				MAP
 			};
 
-			Function(const std::string &expression, ExecutionType type = THREE);
+			Function(const std::string &expression, ExecutionType type = THREE, int monomSize = -1);
 			virtual ~Function();
 
 			const Function &operator = (const Function &);
 
 			bool calculate(const std::vector<bool> &values) const throw(std::runtime_error);
 			bool calculate(const boost::dynamic_bitset<> &values) const throw(std::runtime_error);
+
+			std::size_t getNumberOfVars() const;
 
 		protected:
 			void *m_pimpl;
