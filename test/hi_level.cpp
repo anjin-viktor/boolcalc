@@ -45,25 +45,49 @@ BOOST_AUTO_TEST_CASE(lili128_fd)
 			bcc::Function::LIST_OF_MONOMS
 		);
 
+	bcc::Function fdMap(
+			"x5 + x6 + x7 + x8 + x0 & x4 + x0 & x6 + x1 & x7"
+			"+ x1 & x9 + x2 & x8 + x2 & x9 + x3 & x4 + x0 & x1 & x5"
+			"+ x0 & x1 & x6 + x0 & x1 & x7 + x0 & x1 & x8 + x0 & x2 & x6"
+			"+ x0 & x2 & x7 + x0 & x3 & x4 + x0 & x3 & x5 + x0 & x3 & x6"
+			"+ x1 & x2 & x4 + x1 & x2 & x7 + x1 & x3 & x4 + x1 & x3 & x6"
+			"+ x1 & x3 & x7 + x0 & x1 & x2 & x4 + x0 & x1 & x2 & x6"
+			"+ x0 & x1 & x2 & x7 + x0 & x1 & x2 & x9 + x0 & x1 & x3 & x4"
+			"+ x0 & x1 & x3 & x6 + x0 & x1 & x3 & x8 + x0 & x2 & x3 & x5"
+			"+ x0 & x2 & x3 & x7 + x1 & x2 & x3 & x6 + x1 & x2 & x3 & x8"
+			"+ x1 & x3 & x4 & x5 + x1 & x3 & x4 & x6 + x0 & x1 & x2 & x3 & x6"
+			"+ x0 & x1 & x2 & x3 & x7 + x0 & x1 & x3 & x4 & x5"
+			"+ x0 & x1 & x3 & x4 & x6 + x1 & x2 & x3 & x4 & x5"
+			"+ x1 & x2 & x3 & x4 & x6 + x0 & x1 & x2 & x3 & x4 & x5"
+			"+ x0 & x1 & x2 & x3 & x4 & x6", 
+			bcc::Function::MAP
+		);
 
 	std::vector<bool> v = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	BOOST_CHECK_NO_THROW(fd.calculate(v));
 	BOOST_CHECK_EQUAL(fd.calculate(v), 0);
-
 	BOOST_CHECK_NO_THROW(fdAnf.calculate(v));
 	BOOST_CHECK_EQUAL(fdAnf.calculate(v), 0);
+	BOOST_CHECK_NO_THROW(fdMap.calculate(v));
+	BOOST_CHECK_EQUAL(fdMap.calculate(v), 0);
+
 
 	v = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 	BOOST_CHECK_NO_THROW(fd.calculate(v));
 	BOOST_CHECK_EQUAL(fd.calculate(v), 0);
 	BOOST_CHECK_NO_THROW(fdAnf.calculate(v));
 	BOOST_CHECK_EQUAL(fdAnf.calculate(v), 0);
+	BOOST_CHECK_NO_THROW(fdMap.calculate(v));
+	BOOST_CHECK_EQUAL(fdMap.calculate(v), 0);
+
 
 	v = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
 	BOOST_CHECK_NO_THROW(fd.calculate(v));
 	BOOST_CHECK_EQUAL(fd.calculate(v), 0);
 	BOOST_CHECK_NO_THROW(fdAnf.calculate(v));
 	BOOST_CHECK_EQUAL(fdAnf.calculate(v), 0);
+	BOOST_CHECK_NO_THROW(fdMap.calculate(v));
+	BOOST_CHECK_EQUAL(fdMap.calculate(v), 0);
 
 
 	boost::dynamic_bitset<> x(10, 0x0AAAAA);
@@ -71,6 +95,8 @@ BOOST_AUTO_TEST_CASE(lili128_fd)
 	BOOST_CHECK_EQUAL(fd.calculate(x), 1);
 	BOOST_CHECK_NO_THROW(fdAnf.calculate(x));
 	BOOST_CHECK_EQUAL(fdAnf.calculate(x), 1);
+	BOOST_CHECK_NO_THROW(fdMap.calculate(x));
+	BOOST_CHECK_EQUAL(fdMap.calculate(x), 1);
 }
 
 BOOST_AUTO_TEST_CASE(anf)

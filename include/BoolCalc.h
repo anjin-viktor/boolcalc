@@ -19,7 +19,8 @@ namespace bcc
 			enum ExecutionType
 			{
 				THREE = 0,
-				LIST_OF_MONOMS   // only for ANF
+				LIST_OF_MONOMS,   // only for ANF
+				MAP
 			};
 
 			Function(const std::string &expression, ExecutionType type = THREE);

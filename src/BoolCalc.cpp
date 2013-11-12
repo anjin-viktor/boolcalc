@@ -7,15 +7,18 @@
 
 #include <list>
 #include <utility>
+#include <vector>
 
 typedef std::pair<boost::dynamic_bitset<>, boost::dynamic_bitset<> > Monom;
 
 struct FunctionCalculatorImpl
 {
-	std::shared_ptr<bcc::Node>        m_root;
-	std::list<Monom>                  m_monoms;
-	bool                              m_constValue;
-	bcc::Function::ExecutionType      m_execType;
+	std::shared_ptr<bcc::Node>               m_root;
+	std::list<Monom>                         m_monoms;
+	bool                                     m_constValue;
+	bcc::Function::ExecutionType             m_execType;
+	std::pair<std::vector<std::size_t>, 
+	std::vector<bool> >                      m_values;
 };
 
 
@@ -128,9 +131,61 @@ static bool execListOfMonoms(FunctionCalculatorImpl *m_pimpl, const boost::dynam
 		if(itr -> first.is_subset_of(values) && !itr -> second.intersects(values))
 			result = !result;
 	}
+
 	return result;
 }
 
+
+static void getVars(const std::shared_ptr<bcc::Node> &node, std::vector<std::size_t> &res)
+{
+	std::list<std::shared_ptr<bcc::Node> >::const_iterator itr = node -> m_childs.begin();
+
+	for(;itr != node -> m_childs.end(); itr++)
+		getVars(*itr, res);
+
+	const std::shared_ptr<bcc::Var> pvar = std::dynamic_pointer_cast<bcc::Var>(node);
+
+	if(pvar)
+		if(std::find(res.begin(), res.end(), pvar -> m_varId) == res.end())
+			res.push_back(pvar -> m_varId);
+}
+
+
+static void createTable(std::pair<std::vector<std::size_t>, std::vector<bool> > &table,
+	const std::shared_ptr<bcc::Node> &node)
+{
+	if(table.first.size() > sizeof(unsigned long) * 8)
+		throw std::runtime_error("A lot of variables for `MAP` execution");
+	table.second.resize(1 << table.first.size());
+	unsigned long mask = 0;
+
+	std::size_t size = *std::max_element(table.first.begin(), table.first.end()) + 1;
+	boost::dynamic_bitset<> values(size);
+	for(;mask < (1 << table.first.size()); mask++)
+	{
+		for(std::size_t i=0; i<table.first.size(); i++)
+		{
+			if(mask & (1 << i))
+				values[table.first[i]] = 1;
+			else
+				values[table.first[i]] = 0;
+		}
+
+		table.second[mask] = node -> exec(values);
+	}
+}
+
+
+template <typename T>
+static bool execMap(FunctionCalculatorImpl *pimpl, const T& values)
+{
+	std::size_t position = 0;
+	for(std::size_t i=0; i<pimpl -> m_values.first.size(); i++)
+		if(values[pimpl -> m_values.first[i]])
+			position |= 1 << pimpl -> m_values.first[i];
+
+	return pimpl -> m_values.second[position];
+}
 
 bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionType type)
 {
@@ -154,6 +209,13 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 		std::size_t bitsSize = 0;
 		getBitsSize(pimpl -> m_root, bitsSize);
 		createListOfMonoms(pimpl -> m_root, pimpl -> m_monoms, pimpl -> m_constValue, bitsSize);
+	}
+	else if(type == MAP)
+	{
+		std::pair<std::vector<std::size_t>, std::vector<bool> > table;
+		getVars(pimpl -> m_root, table.first);
+		createTable(table, pimpl -> m_root);
+		pimpl -> m_values = table;
 	}
 }
 
@@ -181,7 +243,7 @@ bool bcc::Function::calculate(const std::vector<bool> &values) const throw(std::
 
 	if(pimpl -> m_execType == THREE)
 		return pimpl -> m_root -> exec(values);
-	else
+	else if(pimpl -> m_execType == LIST_OF_MONOMS)
 	{
 		boost::dynamic_bitset<> v(values.size());
 		for(std::size_t i=0; i<values.size(); i++)
@@ -190,6 +252,8 @@ bool bcc::Function::calculate(const std::vector<bool> &values) const throw(std::
 
 		return execListOfMonoms(pimpl, v);
 	}
+	else
+		return execMap(pimpl, values);
 }
 
 
@@ -202,6 +266,8 @@ bool bcc::Function::calculate(const boost::dynamic_bitset<> &values) const throw
 
 	if(pimpl -> m_execType == THREE)
 		return pimpl -> m_root -> exec(values);
-	else
+	else if(pimpl -> m_execType == LIST_OF_MONOMS)
 		return execListOfMonoms(pimpl, values);
+	else
+		return execMap(pimpl, values);
 }
