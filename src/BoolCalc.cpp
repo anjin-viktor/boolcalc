@@ -182,7 +182,7 @@ static bool execMap(FunctionCalculatorImpl *pimpl, const T& values)
 	std::size_t position = 0;
 	for(std::size_t i=0; i<pimpl -> m_values.first.size(); i++)
 		if(values[pimpl -> m_values.first[i]])
-			position |= 1 << pimpl -> m_values.first[i];
+			position |= 1 << i;
 
 	return pimpl -> m_values.second[position];
 }
