@@ -8,106 +8,447 @@
 #include <list>
 #include <utility>
 #include <vector>
+#include <tuple>
 
-typedef std::pair<boost::dynamic_bitset<>, boost::dynamic_bitset<> > Monom;
+typedef std::tuple<boost::dynamic_bitset<>, boost::dynamic_bitset<>, bool, bcc::Expr::Type> Monom;
 
 struct FunctionCalculatorImpl
 {
-	std::shared_ptr<bcc::Node>               m_root;
-	std::list<Monom>                         m_monoms;
-	bool                                     m_constValue;
-	bcc::Function::ExecutionType             m_execType;
-	std::pair<std::vector<std::size_t>, 
-	std::vector<bool> >                      m_values;
+	std::shared_ptr<bcc::Node>                                     m_root;
+	std::list<Monom>                                               m_monoms;
+	bcc::Function::ExecutionType                                   m_execType;
+	std::pair<std::vector<std::size_t>, std::vector<bool> >        m_values;
 };
 
 
-void createMonom(const std::shared_ptr<bcc::Node> &node, Monom &monom)
+
+void processNot(std::list<Monom> &monoms)
 {
-	std::list<std::shared_ptr<bcc::Node> >::const_iterator itr = node -> m_childs.begin();
+	std::list<Monom>::iterator itr = monoms.begin();
 
-	for(;itr != node -> m_childs.end(); itr++)
+	if(monoms.size() == 1)
 	{
-		const std::shared_ptr<bcc::Expr> expr = std::dynamic_pointer_cast<bcc::Expr>(*itr);
-		const std::shared_ptr<bcc::Var> var = std::dynamic_pointer_cast<bcc::Var>(*itr);
+		Monom tmp = *itr;
+		monoms.clear();
 
-
-		if(var)
-			monom.first[var -> m_varId] = true;
-		else if(expr)
+		bool isFirstOperand = true;
+		if(std::get<0>(tmp).any() || std::get<1>(tmp).any())
 		{
-			if(expr -> m_exprType == bcc::Expr::NOT)
+			for(std::size_t i=0; i<std::get<0>(tmp).size(); i++)
 			{
-				std::list<std::shared_ptr<bcc::Node> >::const_iterator itrNode = (*itr) -> m_childs.begin();
-				if(std::dynamic_pointer_cast<bcc::Var>(*itrNode))
-					monom.second[std::dynamic_pointer_cast<bcc::Var>(*itrNode) -> m_varId] = true;
-				else 
-					throw std::runtime_error("Expression is not ANF");
+				if(std::get<0>(tmp).test(i))
+				{
+					Monom mon;
+					std::get<0>(mon).resize(std::get<0>(tmp).size());
+					std::get<1>(mon).resize(std::get<1>(tmp).size());
+					std::get<1>(mon)[i] = 1;
+					if(isFirstOperand)
+						isFirstOperand = false;
+					else
+						std::get<3>(mon) = bcc::Expr::OR;
+					monoms.push_back(mon);
+				}
+				else if(std::get<1>(tmp).test(i))
+				{
+					Monom mon;
+					std::get<0>(mon).resize(std::get<0>(tmp).size());
+					std::get<1>(mon).resize(std::get<1>(tmp).size());
+					std::get<0>(mon)[i] = 1;
+					if(isFirstOperand)
+						isFirstOperand = false;
+					else
+						std::get<3>(mon) = bcc::Expr::OR;
+					monoms.push_back(mon);
+				}
 			}
-			else if(expr -> m_exprType == bcc::Expr::AND)
-				createMonom(*itr, monom);
-			else
-				throw std::runtime_error("Expression is not ANF");
 		}
 		else
-			throw std::runtime_error("Expression is not ANF");
+		{
+			Monom mon;
+			std::get<0>(mon).resize(std::get<0>(tmp).size());
+			std::get<1>(mon).resize(std::get<1>(tmp).size());
+			std::get<2>(mon) = !std::get<2>(tmp);
+			monoms.push_back(mon);
+		}
+	}
+	else
+	{
+		std::cerr << "in processNot\n";
+		Monom tmp = *itr;
+/*		Monom notFirstOperand = firstOperand;
+		boost::dynamic_bitset<> tmp = std::get<0>(notFirstOperand);
+		std::get<0>(notFirstOperand) = std::get<1>(notFirstOperand);
+		std::get<1>(notFirstOperand) = tmp;
+		std::cerr << "tmp: " << std::get<1>(notFirstOperand) << std::endl;
+		std::get<2>(notFirstOperand) = !std::get<2>(notFirstOperand);
+*/
+		std::list<Monom> firstOperand;
+		firstOperand.push_back(tmp);
+		processNot(firstOperand);
+
+		monoms.erase(itr);
+
+		std::list<Monom> result;
+		switch(std::get<3>(*(monoms.begin())))
+		{
+			case bcc::Expr::OR:
+			{
+				processNot(monoms);
+
+				std::list<Monom>::const_iterator itr = firstOperand.begin();
+				for(;itr != firstOperand.end(); itr++)
+				{
+					std::list<Monom>::const_iterator itr_ = monoms.begin();
+					for(;itr_ != monoms.end(); itr_++)
+					{
+						Monom m;
+						if(std::get<0>(*itr).none() && std::get<1>(*itr).none())
+						{
+							if(std::get<2>(*itr))
+								m = *itr_;
+							else
+							{
+								std::get<0>(m) = boost::dynamic_bitset<>(bitsSize);
+								std::get<1>(m) = boost::dynamic_bitset<>(bitsSize);
+								std::get<2>(m) = false;
+							}
+						}
+						else if(std::get<0>(*itr_).none() && std::get<1>(*itr_).none())
+						{
+							if(std::get<2>(*itr_))
+								m = *itr;
+							else
+							{
+								std::get<0>(m) = boost::dynamic_bitset<>(bitsSize);
+								std::get<1>(m) = boost::dynamic_bitset<>(bitsSize);
+								std::get<2>(m) = false;
+							}
+						}
+						else
+						{
+							std::get<0>(m) = std::get<0>(*itr) | std::get<0>(*itr_);
+							std::get<1>(m) = std::get<1>(*itr) | std::get<1>(*itr_);
+
+							if(std::get<0>(m).intersects(std::get<1>(m)))
+							{
+								std::get<0>(m).clear();
+								std::get<1>(m).clear();
+								std::get<2>(m) = false;
+							}
+						}
+
+						if(itr_ == monoms.begin())
+							std::get<3>(m) = std::get<3>(*itr);
+						else
+							std::get<3>(m) = std::get<3>(*itr_);
+
+						result.push_back(m);
+					}
+				}
+				break;
+			}
+			case bcc::Expr::XOR:
+			{
+				itr = monoms.begin();
+				for(;itr != monoms.end(); itr++)
+				{
+					Monom m;
+					if(std::get<0>(*itr).none() && std::get<1>(*itr).none())
+					{
+						if(std::get<2>(*itr))
+							m = firstOperand;
+						else
+						{
+							std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+							std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+							std::get<2>(m) = false;
+							std::get<3>(m) = std::get<3>(*itr);
+						}
+					}
+					else if(std::get<0>(firstOperand).none() && std::get<1>(firstOperand).none())
+					{
+						if(std::get<2>(firstOperand))
+							m = *itr;
+						else
+						{
+							std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+							std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+							std::get<2>(m) = false;
+							std::get<3>(m) = std::get<3>(*itr);
+						}
+					}
+					else
+					{
+						std::get<0>(m) = std::get<0>(*itr) | std::get<0>(firstOperand);
+						std::get<1>(m) = std::get<1>(*itr) | std::get<1>(firstOperand);
+						if(std::get<0>(m).intersects(std::get<1>(m)))
+						{
+							std::get<0>(m).clear();
+							std::get<1>(m).clear();
+							std::get<2>(m) = false;
+						}
+						std::get<3>(m) = std::get<3>(*itr);
+					}
+					result.push_back(m);
+				}
+				std::cerr << "xor 2\n";
+				processNot(monoms);
+				std::cerr << "xor 3\n";
+				itr = monoms.begin();
+				for(;itr != monoms.end(); itr++)
+				{
+					Monom m;
+					if(std::get<0>(*itr).none() && std::get<1>(*itr).none())
+					{
+						if(std::get<2>(*itr))
+							m = notFirstOperand;
+						else
+						{
+							std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+							std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+							std::get<2>(m) = false;
+							std::get<3>(m) = std::get<3>(*itr);
+						}
+					}
+					else if(std::get<0>(notFirstOperand).none() && std::get<1>(notFirstOperand).none())
+					{
+						if(std::get<2>(notFirstOperand))
+							m = *itr;
+						else
+						{
+							std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+							std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+							std::get<2>(m) = false;
+							std::get<3>(m) = std::get<3>(*itr);
+						}
+					}
+					else
+					{
+						std::get<0>(m) = std::get<0>(*itr) | std::get<0>(notFirstOperand);
+						std::get<1>(m) = std::get<1>(*itr) | std::get<1>(notFirstOperand);
+						if(std::get<0>(m).intersects(std::get<1>(m)))
+						{
+							std::get<0>(m).clear();
+							std::get<1>(m).clear();
+							std::get<2>(m) = false;
+						}
+						std::get<3>(m) = std::get<3>(*itr);
+					}
+					result.push_back(m);
+				}
+				std::cerr << "xor 4\n";
+				break;
+			}
+		};
+		monoms = result;
 	}
 }
 
 
-void createListOfMonoms(const std::shared_ptr<bcc::Node> &root, std::list<Monom> &monoms, bool &constValue,
+void createListOfMonoms(const std::shared_ptr<bcc::Node> &root, std::list<Monom> &monoms, 
 	std::size_t bitsSize)
 {
 	std::list<std::shared_ptr<bcc::Node> >::const_iterator itr = root -> m_childs.begin();
-	if(itr == root -> m_childs.end())
+
+	std::vector<std::list<Monom> > monoms_(root -> m_childs.size());
+	for(std::size_t i=0; itr != root -> m_childs.end(); itr++, i++)
+		createListOfMonoms(*itr, monoms_[i], bitsSize);
+
+	const std::shared_ptr<bcc::Expr> expr = std::dynamic_pointer_cast<bcc::Expr>(root);
+	const std::shared_ptr<bcc::Const> const_ = std::dynamic_pointer_cast<bcc::Const>(root);
+	const std::shared_ptr<bcc::Var> var = std::dynamic_pointer_cast<bcc::Var>(root);
+
+	if(var)
 	{
-		if(std::dynamic_pointer_cast<bcc::Const>(root))
-			constValue = std::dynamic_pointer_cast<bcc::Const>(root) -> m_value;
-		else
-		{
-			const std::shared_ptr<bcc::Var> var = std::dynamic_pointer_cast<bcc::Var>(root);
-
-			Monom monom;
-			monom.first = boost::dynamic_bitset<>(bitsSize);
-			monom.second = boost::dynamic_bitset<>(bitsSize);
-			monom.first[var -> m_varId] = true;
-			monoms.push_back(monom);
-		}
-
+		Monom m;
+		std::get<0>(m) = boost::dynamic_bitset<>(bitsSize);
+		std::get<1>(m) = boost::dynamic_bitset<>(bitsSize);
+		std::get<0>(m).set(var -> m_varId);
+		std::get<2>(m) = false;
+		monoms.push_back(m);
 	}
-
-	for(;itr != root -> m_childs.end(); itr++)
+	else if(const_)
 	{
-		const std::shared_ptr<bcc::Expr> expr = std::dynamic_pointer_cast<bcc::Expr>(*itr);
-		const std::shared_ptr<bcc::Const> const_ = std::dynamic_pointer_cast<bcc::Const>(*itr);
-
-		if(expr)
+		Monom m;
+		std::get<0>(m) = boost::dynamic_bitset<>(bitsSize);
+		std::get<1>(m) = boost::dynamic_bitset<>(bitsSize);
+		std::get<2>(m) = const_ -> m_value;
+		monoms.push_back(m);	
+	}
+	else if(expr)
+	{
+		switch(expr -> m_exprType)
 		{
-			if(expr -> m_exprType == bcc::Expr::XOR)
-				createListOfMonoms(*itr, monoms, constValue, bitsSize);
-			else if(expr -> m_exprType == bcc::Expr::AND || expr -> m_exprType == bcc::Expr::NOT ||
-				 std::dynamic_pointer_cast<bcc::Var>(*itr))
+			case bcc::Expr::AND:
 			{
-				Monom monom;
-				monom.first = boost::dynamic_bitset<>(bitsSize);
-				monom.second = boost::dynamic_bitset<>(bitsSize);
+				std::list<Monom>::const_iterator itr = monoms_[0].begin();
+				for(;itr != monoms_[0].end(); itr++)
+				{
+					std::list<Monom>::const_iterator itr_ = monoms_[1].begin();
+					for(;itr_ != monoms_[1].end(); itr_++)
+					{
+						Monom m;
+						if(std::get<0>(*itr).none() && std::get<1>(*itr).none())
+						{
+							if(std::get<2>(*itr))
+								m = *itr_;
+							else
+							{
+								std::get<0>(m) = boost::dynamic_bitset<>(bitsSize);
+								std::get<1>(m) = boost::dynamic_bitset<>(bitsSize);
+								std::get<2>(m) = false;
+							}
+						}
+						else if(std::get<0>(*itr_).none() && std::get<1>(*itr_).none())
+						{
+							if(std::get<2>(*itr_))
+								m = *itr;
+							else
+							{
+								std::get<0>(m) = boost::dynamic_bitset<>(bitsSize);
+								std::get<1>(m) = boost::dynamic_bitset<>(bitsSize);
+								std::get<2>(m) = false;
+							}
+						}
+						else
+						{
+							std::get<0>(m) = std::get<0>(*itr) | std::get<0>(*itr_);
+							std::get<1>(m) = std::get<1>(*itr) | std::get<1>(*itr_);
 
-				createMonom(*itr, monom);
-				monoms.push_back(monom);
+							if(std::get<0>(m).intersects(std::get<1>(m)))
+							{
+								std::get<0>(m).clear();
+								std::get<1>(m).clear();
+								std::get<2>(m) = false;
+							}
+						}
+
+						if(itr_ == monoms_[1].begin())
+							std::get<3>(m) = std::get<3>(*itr);
+						else
+							std::get<3>(m) = std::get<3>(*itr_);
+
+						monoms.push_back(m);
+					}
+				}
+
+				break;
 			}
-			else 
-				throw std::runtime_error("Expression is not ANF");
+
+			case bcc::Expr::OR:
+			{
+				std::list<Monom>::iterator itr = monoms_[1].begin();
+
+				for(;itr != monoms_[1].end(); itr++)
+				{
+					std::get<3>(*itr) = bcc::Expr::OR;
+					monoms_[0].push_back(*itr);
+				}
+				monoms = monoms_[0];
+				std::cerr << "size(OR): " << monoms.size() << std::endl;
+				break;
+			}
+
+			case bcc::Expr::XOR:
+			{
+				std::list<Monom> notFirst = monoms_[0];
+				std::list<Monom> notSecond = monoms_[1];
+				std::cerr << "size(XOR): " << notFirst.size() << " " << notSecond.size() << std::endl;
+				processNot(notFirst);
+				processNot(notSecond);
+				std::list<Monom>::const_iterator itr_ = notFirst.begin();
+
+				std::cerr << "info: \n=====\n";
+
+				for(;itr_ != notFirst.end(); itr_++)
+				{
+					std::cerr << std::get<0>(*itr_) << " " << std::get<1>(*itr_) << std::endl;
+				}
+				std::cerr << "=====\n";
+
+
+//				std::cerr << monoms_[0] << " " << notFirst << " " << monoms_[1] << " " << notSecond << std::endl;
+				std::list<Monom>::const_iterator itr = monoms_[0].begin();
+				for(;itr != monoms_[0].end(); itr++)
+				{
+					std::list<Monom>::const_iterator itr_ = notSecond.begin();
+					for(;itr_ != notSecond.end(); itr_++)
+					{
+						if(std::get<0>(*itr).none() && std::get<1>(*itr).none())
+						{
+							if(std::get<2>(*itr))
+								monoms.push_back(*itr_);
+						}
+						else if(std::get<0>(*itr_).none() && std::get<1>(*itr_).none())
+						{
+							if(std::get<2>(*itr_))
+								monoms.push_back(*itr);
+						}
+						else
+						{
+							Monom m;
+							std::get<0>(m) = std::get<0>(*itr) | std::get<0>(*itr_);
+							std::get<1>(m) = std::get<1>(*itr) | std::get<1>(*itr_);
+
+							if(std::get<0>(m).intersects(std::get<1>(m)))
+							{
+								std::get<0>(m).clear();
+								std::get<1>(m).clear();
+								std::get<2>(m) = false;
+							}
+							monoms.push_back(m);
+						}	
+					}
+				}
+
+				itr = monoms_[1].begin();
+				for(;itr != monoms_[1].end(); itr++)
+				{
+					std::list<Monom>::const_iterator itr_ = notFirst.begin();
+					for(;itr_ != notFirst.end(); itr_++)
+					{
+						if(std::get<0>(*itr).none() && std::get<1>(*itr).none())
+						{
+							if(std::get<2>(*itr))
+								monoms.push_back(*itr_);
+						}
+						else if(std::get<0>(*itr_).none() && std::get<1>(*itr_).none())
+						{
+							if(std::get<2>(*itr_))
+								monoms.push_back(*itr);
+						}
+						else
+						{
+							Monom m;
+							std::get<0>(m) = std::get<0>(*itr) | std::get<0>(*itr_);
+							std::get<1>(m) = std::get<1>(*itr) | std::get<1>(*itr_);
+
+							if(std::get<0>(m).intersects(std::get<1>(m)))
+							{
+								std::get<0>(m).clear();
+								std::get<1>(m).clear();
+								std::get<2>(m) = false;
+							}
+							monoms.push_back(m);
+						}
+					}
+				}
+
+
+
+				break;
+			}
+
+			case bcc::Expr::NOT:
+			{
+				processNot(monoms_[0]);
+				monoms = monoms_[0];
+				std::cerr << "after not: " << std::get<1>(*(monoms.begin())) << std::endl;
+				break;
+			}
 		}
-		else if(const_)
-		{
-			if(const_ -> m_value)
-				constValue = !constValue;
-		}
-		else
-			createListOfMonoms(*itr, monoms, constValue, bitsSize);
 	}
 }
-
 
 static void getBitsSize(const std::shared_ptr<bcc::Node> &node, std::size_t &size)
 {
@@ -127,14 +468,49 @@ static bool execListOfMonoms(FunctionCalculatorImpl *pimpl, const boost::dynamic
 {
 	std::list<Monom>::const_iterator itr = pimpl -> m_monoms.begin();
 
-	bool result = pimpl -> m_constValue;
+	bool result;
+	if(std::get<0>(*itr).any() || std::get<1>(*itr).any())
+	{
+		std::cerr << "has ";
+		std::cerr << std::get<0>(*itr) << " " << std::get<1>(*itr) << " " << values << std::endl;
+		if(std::get<0>(*itr).is_subset_of(values) && !std::get<1>(*itr).intersects(values))
+			result = true;
+		else
+			result = false;
+	}
+	else
+		result = std::get<2>(*itr);
+std::cerr << "result: " << result << std::endl;
+	for(itr++ ;itr != pimpl -> m_monoms.end(); itr++)
+	{
+		bool v;
+		if(std::get<0>(*itr).any() || std::get<1>(*itr).any())
+		{
+			if(std::get<0>(*itr).is_subset_of(values) && !std::get<1>(*itr).intersects(values))
+				v = true;
+			else
+				v = false;
+		}
+		else
+			v = std::get<2>(*itr);
 
-	if(itr != pimpl -> m_monoms.end() && itr -> first.size() > values.size())
-		throw std::runtime_error("vector of values is too smal");
+		if(std::get<3>(*itr) == bcc::Expr::OR)
+		{
+			std::cerr << "is or\n";
+		std::cerr << std::get<0>(*itr) << " " << std::get<1>(*itr) << " " << values << std::endl;
 
-	for(;itr != pimpl -> m_monoms.end(); itr++)
-		if(itr -> first.is_subset_of(values) && !itr -> second.intersects(values))
-			result = !result;
+			result = result | v;
+		}
+		else
+		{
+						std::cerr << "is xor\n";
+		std::cerr << std::get<0>(*itr) << " " << std::get<1>(*itr) << " " << values << std::endl;
+
+			result = result != v;
+		}
+std::cerr << "result: " << result << std::endl;
+
+	}
 
 	return result;
 }
@@ -206,23 +582,21 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 
 	pimpl -> m_root = parser.m_root;
 	pimpl -> m_execType = type;
-	pimpl -> m_constValue = false;
 
 	if(type == LIST_OF_MONOMS)
 	{
 		std::size_t bitsSize = 0;
 		getBitsSize(pimpl -> m_root, bitsSize);
-		createListOfMonoms(pimpl -> m_root, pimpl -> m_monoms, pimpl -> m_constValue, bitsSize);
-
+		createListOfMonoms(pimpl -> m_root, pimpl -> m_monoms, bitsSize);
 		if(monomSize >= 0)
 		{
 			std::list<Monom>::iterator itr = pimpl -> m_monoms.begin();
 			for(;itr != pimpl -> m_monoms.end(); itr++)
 			{
-				itr -> first.resize(monomSize);
-				itr -> second.resize(monomSize);
+				std::get<0>(*itr).resize(monomSize);
+				std::get<1>(*itr).resize(monomSize);
 			}
-		}   
+		} 
 	}
 	else if(type == MAP)
 	{
