@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(anf)
 
 
 
-/*
+
 BOOST_AUTO_TEST_CASE(expr_1)
 {
 	bcc::Function f("(x0 | x1) & (x2 + x3) & !(x4 | x5)", bcc::Function::LIST_OF_MONOMS);
@@ -193,35 +193,108 @@ BOOST_AUTO_TEST_CASE(expr_1)
 }
 
 
+BOOST_AUTO_TEST_CASE(expr_not_monom)
+{
+	bcc::Function f1("!x0", bcc::Function::LIST_OF_MONOMS, 3);
+	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("111"))), 0);
+	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("110"))), 1);
+
+	bcc::Function f2("!(x0 & x1)", bcc::Function::LIST_OF_MONOMS);
+	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("00"))), 1);
+	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("01"))), 1);
+	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("10"))), 1);
+	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("11"))), 0);
+
+	bcc::Function f3("!(x0 & x1 & x2)", bcc::Function::LIST_OF_MONOMS);
+
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("000"))), 1);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("001"))), 1);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("010"))), 1);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("011"))), 1);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("100"))), 1);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("101"))), 1);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("110"))), 1);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("111"))), 0);
+
+
+	bcc::Function f4("!(x0 & x1 & x2 & x3)", bcc::Function::LIST_OF_MONOMS);
+
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("0000"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("0001"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("0010"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("0011"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("0100"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("0101"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("0110"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("0111"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("1000"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("1001"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("1010"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("1011"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("1100"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("1101"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("1110"))), 1);
+	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("1111"))), 0);
+
+}
+
+
 BOOST_AUTO_TEST_CASE(expr_not)
 {
-	bcc::Function f1("!(x0 & x1 & x2)", bcc::Function::LIST_OF_MONOMS);
+	bcc::Function f0("!(x0 + x1)", bcc::Function::LIST_OF_MONOMS);
 
-	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("000"))), 1);
-	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("001"))), 1);
-	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("010"))), 1);
-	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("011"))), 1);
-	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("100"))), 1);
-	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("101"))), 1);
-	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("110"))), 1);
-	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("111"))), 0);
+	BOOST_CHECK_EQUAL(f0.calculate(boost::dynamic_bitset<>(std::string("00"))), 1);
+	BOOST_CHECK_EQUAL(f0.calculate(boost::dynamic_bitset<>(std::string("01"))), 0);
+	BOOST_CHECK_EQUAL(f0.calculate(boost::dynamic_bitset<>(std::string("10"))), 0);
+	BOOST_CHECK_EQUAL(f0.calculate(boost::dynamic_bitset<>(std::string("11"))), 1);
 
-	bcc::Function f2("!(x0 | x1 | x2)", bcc::Function::LIST_OF_MONOMS);
+	bcc::Function f1("!(x0 | x1)", bcc::Function::LIST_OF_MONOMS);
+
+	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("00"))), 1);
+	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("01"))), 0);
+	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("10"))), 0);
+	BOOST_CHECK_EQUAL(f1.calculate(boost::dynamic_bitset<>(std::string("11"))), 0);
+
+	bcc::Function f2("!(x0 + x1 + x2)", bcc::Function::LIST_OF_MONOMS);
 
 	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("000"))), 1);
 	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("001"))), 0);
 	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("010"))), 0);
-	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("011"))), 0);
+	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("011"))), 1);
 	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("100"))), 0);
-	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("101"))), 0);
-	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("110"))), 0);
+	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("101"))), 1);
+	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("110"))), 1);
 	BOOST_CHECK_EQUAL(f2.calculate(boost::dynamic_bitset<>(std::string("111"))), 0);
 
-	bcc::Function f3("!x0", bcc::Function::LIST_OF_MONOMS, 3);
+
+	bcc::Function f3("!(x0 | x1 | x2)", bcc::Function::LIST_OF_MONOMS);
+
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("000"))), 1);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("001"))), 0);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("010"))), 0);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("011"))), 0);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("100"))), 0);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("101"))), 0);
+	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("110"))), 0);
 	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("111"))), 0);
-	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("110"))), 1);
+
+
+	bcc::Function f5("!(x0 + x1 + x2 + x3 | x4 | x5)", bcc::Function::LIST_OF_MONOMS);
+
+	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("000000"))), 1);
+	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("100000"))), 0);
+	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("100001"))), 0);
+	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("000011"))), 1);
+	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("000111"))), 0);
+	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("001111"))), 1);
+	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("011111"))), 0);
+	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("111111"))), 0);
+
+
 }
-*/
+
+
+
 
 BOOST_AUTO_TEST_CASE(expr_xor)
 {
@@ -261,17 +334,17 @@ BOOST_AUTO_TEST_CASE(expr_xor)
 	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("1101"))), 1);
 	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("1110"))), 1);
 	BOOST_CHECK_EQUAL(f3.calculate(boost::dynamic_bitset<>(std::string("1111"))), 0);
-/*
+
 	bcc::Function f4("!(x0 + x1)", bcc::Function::LIST_OF_MONOMS);
 
 	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("00"))), 1);
 	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("01"))), 0);
 	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("10"))), 0);
 	BOOST_CHECK_EQUAL(f4.calculate(boost::dynamic_bitset<>(std::string("11"))), 1);
-*/
-//	bcc::Function f5("!(x0 + x1 + x2 + x3)", bcc::Function::LIST_OF_MONOMS);
 
-/*	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("0000"))), 1);
+	bcc::Function f5("!(x0 + x1 + x2 + x3)", bcc::Function::LIST_OF_MONOMS);
+
+	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("0000"))), 1);
 	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("0001"))), 0);
 	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("0010"))), 0);
 	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("0011"))), 1);
@@ -287,7 +360,7 @@ BOOST_AUTO_TEST_CASE(expr_xor)
 	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("1101"))), 0);
 	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("1110"))), 0);
 	BOOST_CHECK_EQUAL(f5.calculate(boost::dynamic_bitset<>(std::string("1111"))), 1);
-*/
+
 }
 
 
