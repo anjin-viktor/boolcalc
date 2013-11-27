@@ -512,4 +512,19 @@ BOOST_AUTO_TEST_CASE(expr_4)
 }
 
 
+
+BOOST_AUTO_TEST_CASE(diff_number_of_ops)
+{
+	bcc::Function expr("x0 + x1", bcc::Function::LIST_OF_MONOMS);
+
+	BOOST_CHECK_NO_THROW(expr.calculate(boost::dynamic_bitset<>(std::string("0000"))));
+	BOOST_CHECK_NO_THROW(expr.calculate(boost::dynamic_bitset<>(std::string("0"))));
+
+	std::vector<bool> v1 = {0, 0, 0, 0};
+	std::vector<bool> v2 = {0};
+
+	BOOST_CHECK_NO_THROW(expr.calculate(v1));
+	BOOST_CHECK_NO_THROW(expr.calculate(v2));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

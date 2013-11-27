@@ -138,7 +138,7 @@ void processNot(std::list<Monom> &monoms)
 			{
 				Monom m;
 				std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(firstOperand).size());
-				std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(firstOperand).size());
+				std::get<1>(m) = boost::dynamic_bitset<>(std::get<1>(firstOperand).size());
 				std::get<2>(m) = false;
 				result.push_back(m);
 			}
@@ -159,7 +159,7 @@ void processNot(std::list<Monom> &monoms)
 					else
 					{
 						std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
-						std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+						std::get<1>(m) = boost::dynamic_bitset<>(std::get<1>(*itr).size());
 						std::get<2>(m) = false;
 					}
 				}
@@ -169,8 +169,8 @@ void processNot(std::list<Monom> &monoms)
 					std::get<1>(m) = std::get<1>(firstOperand) | std::get<1>(*itr_);
 					if(std::get<0>(m).intersects(std::get<1>(m)))
 					{
-						std::get<0>(m).clear();
-						std::get<1>(m).clear();
+						std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(firstOperand).size());
+						std::get<1>(m) = boost::dynamic_bitset<>(std::get<1>(firstOperand).size());
 						std::get<2>(m) = false;
 					}
 				}
@@ -197,7 +197,7 @@ void processNot(std::list<Monom> &monoms)
 					else
 					{
 						std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
-						std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+						std::get<1>(m) = boost::dynamic_bitset<>(std::get<1>(*itr).size());
 						std::get<2>(m) = false;
 					}
 				}
@@ -208,7 +208,7 @@ void processNot(std::list<Monom> &monoms)
 					else
 					{
 						std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
-						std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+						std::get<1>(m) = boost::dynamic_bitset<>(std::get<1>(*itr).size());
 						std::get<2>(m) = false;
 					}
 				}
@@ -218,8 +218,8 @@ void processNot(std::list<Monom> &monoms)
 					std::get<1>(m) = std::get<1>(*itr) | std::get<1>(*itr_);
 					if(std::get<0>(m).intersects(std::get<1>(m)))
 					{
-						std::get<0>(m).clear();
-						std::get<1>(m).clear();
+						std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+						std::get<1>(m) = boost::dynamic_bitset<>(std::get<1>(*itr).size());
 						std::get<2>(m) = false;
 					}
 				}
@@ -307,13 +307,11 @@ void createListOfMonoms(const std::shared_ptr<bcc::Node> &root, std::list<Monom>
 
 							if(std::get<0>(m).intersects(std::get<1>(m)))
 							{
-								std::get<0>(m).clear();
-								std::get<1>(m).clear();
+								std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());;
+								std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());;
 								std::get<2>(m) = false;
 							}
 						}
-
-
 
 						monoms.push_back(m);
 					}
@@ -366,8 +364,8 @@ void createListOfMonoms(const std::shared_ptr<bcc::Node> &root, std::list<Monom>
 
 							if(std::get<0>(m).intersects(std::get<1>(m)))
 							{
-								std::get<0>(m).clear();
-								std::get<1>(m).clear();
+								std::get<0>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
+								std::get<1>(m) = boost::dynamic_bitset<>(std::get<0>(*itr).size());
 								std::get<2>(m) = false;
 							}
 						}
@@ -543,7 +541,7 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 				ritr++;
 		}
 
-		if(monomSize >= 0)
+		if(monomSize > 0)
 		{
 			ritr = pimpl -> m_monoms.rbegin();
 			for(;ritr != pimpl -> m_monoms.rend(); ritr++)
@@ -588,8 +586,12 @@ bool bcc::Function::calculate(const std::vector<bool> &values) const throw(std::
 		return pimpl -> m_root -> exec(values);
 	else if(pimpl -> m_execType == LIST_OF_MONOMS)
 	{
-		boost::dynamic_bitset<> v(values.size());
-		for(std::size_t i=0; i<values.size(); i++)
+		std::size_t size = values.size();
+		if(!pimpl -> m_monoms.empty())
+			size = std::get<0>(*(pimpl -> m_monoms.begin())).size();
+
+		boost::dynamic_bitset<> v(size);
+		for(std::size_t i=0; i<std::min(values.size(), size); i++)
 			if(values[i])
 				v[i] = true;
 
@@ -610,7 +612,15 @@ bool bcc::Function::calculate(const boost::dynamic_bitset<> &values) const throw
 	if(pimpl -> m_execType == THREE)
 		return pimpl -> m_root -> exec(values);
 	else if(pimpl -> m_execType == LIST_OF_MONOMS)
+	{
+		if(!(pimpl -> m_monoms.empty()) && values.size() != std::get<0>(*(pimpl -> m_monoms.begin())).size())
+		{
+			boost::dynamic_bitset<> tmp = values;
+			tmp.resize(std::get<0>(*(pimpl -> m_monoms.begin())).size());
+			return execListOfMonoms(pimpl, tmp);
+		}
 		return execListOfMonoms(pimpl, values);
+	}
 	else
 		return execMap(pimpl, values);
 }
