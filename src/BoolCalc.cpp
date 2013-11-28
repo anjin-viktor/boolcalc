@@ -17,6 +17,7 @@ struct FunctionCalculatorImpl
 {
 	std::shared_ptr<bcc::Node>                                     m_root;
 	std::list<Monom>                                               m_monoms;
+	bool                                                           m_constValue;
 	bcc::Function::ExecutionType                                   m_execType;
 	std::pair<std::vector<std::size_t>, std::vector<bool> >        m_values;
 };
@@ -418,23 +419,11 @@ static void getBitsSize(const std::shared_ptr<bcc::Node> &node, std::size_t &siz
 static bool execListOfMonoms(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &values)
 {
 	std::list<Monom>::const_iterator itr = pimpl -> m_monoms.begin();
-
-	bool result = false;
+	bool result = pimpl -> m_constValue;
 	for(; itr != pimpl -> m_monoms.end(); itr++)
 	{
-		bool v;
-		if(std::get<0>(*itr).any() || std::get<1>(*itr).any())
-		{
-			if(std::get<0>(*itr).is_subset_of(values) && !std::get<1>(*itr).intersects(values))
-				v = true;
-			else
-				v = false;
-		}
-		else
-			v = std::get<2>(*itr);
-
-		if(v)
-			result = result != v;
+		if(std::get<0>(*itr).is_subset_of(values) && !std::get<1>(*itr).intersects(values))
+			result = !result;
 	}
 
 	return result;
@@ -510,45 +499,66 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 
 	if(type == LIST_OF_MONOMS)
 	{
+		pimpl -> m_constValue = false;
 		std::size_t bitsSize = 0;
 		getBitsSize(pimpl -> m_root, bitsSize);
 		createListOfMonoms(pimpl -> m_root, pimpl -> m_monoms, bitsSize);
 
 
-		std::list<Monom>::reverse_iterator ritr = pimpl -> m_monoms.rbegin();
+		std::list<Monom>::iterator itr = pimpl -> m_monoms.begin();
 
-		for(;ritr != pimpl -> m_monoms.rend();)
+		for(;itr != pimpl -> m_monoms.end();)
 		{
 			std::size_t n = 0;
-			std::list<Monom>::iterator itr = pimpl -> m_monoms.begin();
-			for(;itr != pimpl -> m_monoms.end() && 
-				(itr = std::find(itr, pimpl -> m_monoms.end(), *ritr)) != pimpl -> m_monoms.end(); itr++)
+			std::list<Monom>::iterator itr_ = pimpl -> m_monoms.begin();
+
+			for(;itr_ != pimpl -> m_monoms.end() && 
+				(itr_ = std::find(itr_, pimpl -> m_monoms.end(), *itr)) != pimpl -> m_monoms.end(); itr_++)
 				n++;
 
 			if(n != 1)
 			{
-				std::list<Monom>::reverse_iterator tmp = ritr;
-				Monom value = *ritr;
-				tmp++;
-				pimpl -> m_monoms.remove(*ritr);
+
+				Monom value = *itr;
+				pimpl -> m_monoms.remove(*itr);
 
 				if(n % 2)
 					pimpl -> m_monoms.push_back(value);
 
-				ritr = tmp;
+				itr = pimpl -> m_monoms.begin();
 			}
 			else 
-				ritr++;
+				itr++;
 		}
 
 		if(monomSize > 0)
 		{
-			ritr = pimpl -> m_monoms.rbegin();
-			for(;ritr != pimpl -> m_monoms.rend(); ritr++)
+			itr = pimpl -> m_monoms.begin();
+			for(;itr != pimpl -> m_monoms.end(); itr++)
 			{
-				std::get<0>(*ritr).resize(monomSize);
-				std::get<1>(*ritr).resize(monomSize);
+				std::get<0>(*itr).resize(monomSize);
+				std::get<1>(*itr).resize(monomSize);
 			}
+		}
+
+		itr = pimpl -> m_monoms.begin();
+
+		for(;itr != pimpl -> m_monoms.end(); )
+		{
+			if(std::get<0>(*itr).none() && std::get<1>(*itr).none())
+			{
+
+				if(std::get<2>(*itr))
+					pimpl -> m_constValue = !(pimpl -> m_constValue);
+
+				std::list<Monom>::iterator tmp = itr;
+				tmp++;
+
+				pimpl -> m_monoms.erase(itr);
+				itr = tmp;
+			}
+			else
+				itr++;
 		}
 	}
 	else if(type == MAP)
@@ -617,8 +627,10 @@ bool bcc::Function::calculate(const boost::dynamic_bitset<> &values) const throw
 		{
 			boost::dynamic_bitset<> tmp = values;
 			tmp.resize(std::get<0>(*(pimpl -> m_monoms.begin())).size());
+
 			return execListOfMonoms(pimpl, tmp);
 		}
+
 		return execListOfMonoms(pimpl, values);
 	}
 	else

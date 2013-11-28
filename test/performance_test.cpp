@@ -21,17 +21,17 @@ int main(int argc, char **argv)
 
 	boost::chrono::high_resolution_clock::time_point start = boost::chrono::high_resolution_clock::now();
 
-	for(std::size_t i=0; i<1000; i++)
-		f.calculate(v);
+//	for(std::size_t i=0; i<1000; i++)
+//		f.calculate(v);
 
 	boost::chrono::nanoseconds duration = boost::chrono::high_resolution_clock::now() - start;
-	std::cout << "\n\n================================================\n\n";
-	std::cout << "Test 1 (repeated big function `THREE` execution: " << duration.count() << " ns.\n\n";
+//	std::cout << "\n\n================================================\n\n";
+//	std::cout << "Test 1 (repeated big function `THREE` execution: " << duration.count() << " ns.\n\n";
 
 	f = bcc::Function(func_str, bcc::Function::LIST_OF_MONOMS);
 	start = boost::chrono::high_resolution_clock::now();
 
-	for(std::size_t i=0; i<1000; i++)
+	for(std::size_t i=0; i<50000; i++)
 		f.calculate(v);
 
 	duration = boost::chrono::high_resolution_clock::now() - start;
