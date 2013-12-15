@@ -19,11 +19,12 @@ namespace bcc
 			enum ExecutionType
 			{
 				THREE = 0,
-				LIST_OF_MONOMS,   // only for ANF
+				LIST_OF_MONOMS,
 				MAP
 			};
 
 			Function(const std::string &expression, ExecutionType type = THREE, int monomSize = -1);
+			Function(const std::vector<bool> &serializeData);
 			virtual ~Function();
 
 			const Function &operator = (const Function &);
@@ -33,6 +34,7 @@ namespace bcc
 
 			std::size_t getNumberOfVars() const;
 
+			static std::vector<bool> serialize(const std::string &expression);
 		protected:
 			void *m_pimpl;
 	};

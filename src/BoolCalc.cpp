@@ -571,6 +571,44 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 }
 
 
+bcc::Function::Function(const std::vector<bool> &serializeData)
+{
+	FunctionCalculatorImpl *pimpl = new FunctionCalculatorImpl;
+	m_pimpl = pimpl;
+
+	pimpl -> m_execType = LIST_OF_MONOMS;
+
+	std::size_t numOfVars = 0;
+	std::size_t pos = 0;
+
+	for(; pos<31; pos++)
+		if(serializeData[pos])
+			numOfVars += std::pow(2, pos);
+
+	pimpl -> m_constValue = serializeData[pos];
+	pos++;
+
+	for(;pos != serializeData.size();)
+	{
+		Monom monom;
+		std::get<0>(monom).resize(numOfVars);
+		std::get<1>(monom).resize(numOfVars);
+
+		for(std::size_t i=0; i<numOfVars; i++)
+		{
+			if(serializeData[pos + i])
+				std::get<0>(monom)[i] = 1;
+			if(serializeData[pos + numOfVars + i])
+				std::get<1>(monom)[i] = 1;
+		}
+
+		pimpl -> m_monoms.push_back(monom);
+		pos += numOfVars * 2;
+	}
+}
+
+
+
 bcc::Function::~Function()
 {
 	delete (FunctionCalculatorImpl *) m_pimpl;
@@ -643,4 +681,39 @@ std::size_t bcc::Function::getNumberOfVars() const
         std::size_t bitsSize = 0;
         getBitsSize(((FunctionCalculatorImpl *) m_pimpl) -> m_root, bitsSize);
         return bitsSize;
+}
+
+
+
+std::vector<bool> bcc::Function::serialize(const std::string &expression)
+{
+	bcc::Function f(expression, LIST_OF_MONOMS);
+	std::size_t monomSize = f.getNumberOfVars();
+
+	std::vector<bool> result;
+	std::size_t i=0;
+	for(;i < 31; monomSize /= 2, i++)
+		result.push_back(monomSize % 2);
+
+	result.push_back(((FunctionCalculatorImpl *) f.m_pimpl) -> m_constValue);
+	monomSize = f.getNumberOfVars();
+
+	std::list<Monom>::const_iterator itr = ((FunctionCalculatorImpl *) f.m_pimpl) -> m_monoms.begin();
+
+	for(; itr != ((FunctionCalculatorImpl *) f.m_pimpl) -> m_monoms.end(); itr++)
+	{
+		boost::dynamic_bitset<> monom(monomSize * 2);
+		for(std::size_t i=0; i<monomSize; i++)
+		{
+			if(std::get<0>(*itr)[i])
+				monom[i] = 1;
+			if(std::get<1>(*itr)[i])
+				monom[monomSize + i] = 1;
+		}
+
+		for(std::size_t i=0; i<monomSize * 2; i++)
+			result.push_back(monom[i]);
+
+	}
+	return result;
 }

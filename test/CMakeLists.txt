@@ -21,7 +21,7 @@ include_directories(
 add_executable (tests_lowlevel ${SOURCES})
 target_link_libraries (tests_lowlevel ${LIBS} ${Boost_LIBRARIES})
 
-add_executable (tests_hilevel hi_level.cpp main.cpp)
+add_executable (tests_hilevel hi_level.cpp main.cpp serialize.cpp)
 target_link_libraries (tests_hilevel boolcalc ${Boost_LIBRARIES})
 
 add_executable (performance_test performance_test.cpp)
