@@ -1,20 +1,5 @@
 #include "BDD.h"
 #include <iostream>
-namespace 
-{
-	class BDDNodeNonTerminal: public bcc::BDDNode
-	{
-		public:
-			std::size_t    m_varId;
-	};
-
-	class BDDNodeTerminal: public bcc::BDDNode
-	{
-		public:
-			bool         m_value;
-	};
-}
-
 
 static std::size_t findMaxFreqVar(const std::list<Monom> &monoms)
 {
@@ -39,8 +24,11 @@ bcc::BDDNode *createNode(const std::list<Monom> &monoms, bool constValue)
 {
 	if(monoms.empty())
 	{
-		BDDNodeTerminal *pterm = new BDDNodeTerminal;
-		pterm-> m_value = constValue;
+		bcc::BDDNode *pterm = new bcc::BDDNode;
+		pterm -> m_value = constValue;
+		pterm -> m_isTerm = true;
+		pterm -> m_fixFalse = pterm -> m_fixTrue = NULL;
+
 
 		return pterm;
 	}
@@ -60,71 +48,84 @@ bcc::BDDNode *createNode(const std::list<Monom> &monoms, bool constValue)
 
 		if(!std::get<1>(*itr).test(pos))
 		{
-//			if(std::get<0>(*itr).test(pos))
-//			{
 				if(!std::get<0>(m).any() && !std::get<1>(m).any())
 					constFixTrue = !constFixTrue;
 				else
 					fixTrue.push_back(m);
-//			}
-//			else
 		}
 		if(!std::get<0>(*itr).test(pos))
 		{
-			if(!std::get<1>(m).any() && !std::get<0>(m).any() /*&& std::get<1>(*itr).test(pos)*/)
+			if(!std::get<1>(m).any() && !std::get<0>(m).any())
 				constFixFalse = !constFixFalse;
 			else
 				fixFalse.push_back(m);
 		}
 	}
 
-	BDDNodeNonTerminal *pnewNode = new BDDNodeNonTerminal;
+	bcc::BDDNode *pnewNode = new bcc::BDDNode;
 	pnewNode -> m_varId = pos;
+	pnewNode -> m_isTerm = false;
 
 	if(!fixTrue.empty())
-		pnewNode -> m_fixTrue.reset(createNode(fixTrue, constFixTrue));
+		pnewNode -> m_fixTrue = createNode(fixTrue, constFixTrue);
 	else
 	{
-		BDDNodeTerminal *pterm = new BDDNodeTerminal;
-		pterm-> m_value = constFixTrue;
-		pnewNode -> m_fixTrue.reset(pterm);
+		bcc::BDDNode *pterm = new bcc::BDDNode;
+		pterm -> m_value = constFixTrue;
+		pterm -> m_isTerm = true;
+		pterm -> m_fixFalse = pterm -> m_fixTrue = NULL;
+
+		pnewNode -> m_fixTrue = pterm;
 	}
 
 	if(!fixFalse.empty())
-		pnewNode -> m_fixFalse.reset(createNode(fixFalse, constFixFalse));
+		pnewNode -> m_fixFalse = createNode(fixFalse, constFixFalse);
 	else
 	{
-		BDDNodeTerminal *pterm = new BDDNodeTerminal;
+		bcc::BDDNode *pterm = new bcc::BDDNode;
 		pterm-> m_value = constFixFalse;
-		pnewNode -> m_fixFalse.reset(pterm);
+		pterm -> m_isTerm = true;
+		pterm -> m_fixFalse = pterm -> m_fixTrue = NULL;
+		pnewNode -> m_fixFalse = pterm;
 	}
 
 	return pnewNode;
 }
 
 
-bcc::BDD::BDD(const std::list<Monom> &monoms, bool constValue)
+static void deleteNode(bcc::BDDNode *pnode)
 {
-	m_root.reset(createNode(monoms, constValue));
+	if(pnode -> m_fixTrue)
+		deleteNode(pnode -> m_fixTrue);
+
+	if(pnode -> m_fixFalse)
+		deleteNode(pnode -> m_fixFalse);
+
+	delete pnode;
 }
 
 
+bcc::BDD::BDD(const std::list<Monom> &monoms, bool constValue)
+{
+	m_root = createNode(monoms, constValue);
+}
+
+
+bcc::BDD::~BDD()
+{
+	deleteNode(m_root);
+}
+
 bool bcc::BDD::exec(const boost::dynamic_bitset<> &vars)
 {
-	bcc::BDDNode *pnode = m_root.get();
-	for(;;)
+	bcc::BDDNode *pnode = m_root;
+	for(;!pnode -> m_isTerm;)
 	{
-
-		BDDNodeTerminal *pterm = dynamic_cast<BDDNodeTerminal *>(pnode);
-
-		if(pterm)
-			return pterm -> m_value;
-
-		BDDNodeNonTerminal *pnonTerm = dynamic_cast<BDDNodeNonTerminal *>(pnode);
-		if(vars.test(pnonTerm -> m_varId))
-			pnode = pnode -> m_fixTrue.get();
+		if(vars.test(pnode -> m_varId))
+			pnode = pnode -> m_fixTrue;
 		else
-			pnode = pnode -> m_fixFalse.get();
+			pnode = pnode -> m_fixFalse;
 	}
 
+	return pnode -> m_value;
 }
