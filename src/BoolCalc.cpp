@@ -2,6 +2,7 @@
 
 #include "Node.h"
 #include "BoolExprParser.h"
+#include "BDD.h"
 
 #include <boost/spirit/include/qi.hpp>
 
@@ -20,6 +21,7 @@ struct FunctionCalculatorImpl
 	bool                                                           m_constValue;
 	bcc::Function::ExecutionType                                   m_execType;
 	std::pair<std::vector<std::size_t>, std::vector<bool> >        m_values;
+	std::auto_ptr<bcc::BDD>                                        m_pBDD;
 };
 
 
@@ -481,6 +483,12 @@ static bool execMap(FunctionCalculatorImpl *pimpl, const T& values)
 	return pimpl -> m_values.second[position];
 }
 
+
+bool execBDD(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &values)
+{
+	return pimpl -> m_pBDD -> exec(values);
+}
+
 bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionType type, int monomSize)
 {
 	std::string expr = expression;
@@ -497,7 +505,7 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 	pimpl -> m_root = parser.m_root;
 	pimpl -> m_execType = type;
 
-	if(type == LIST_OF_MONOMS)
+	if(type == LIST_OF_MONOMS || type == BDD)
 	{
 		pimpl -> m_constValue = false;
 		std::size_t bitsSize = 0;
@@ -559,6 +567,11 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 			}
 			else
 				itr++;
+		}
+
+		if(type == BDD)
+		{
+			pimpl -> m_pBDD.reset(new bcc::BDD(pimpl -> m_monoms, pimpl -> m_constValue));
 		}
 	}
 	else if(type == MAP)
@@ -632,7 +645,7 @@ bool bcc::Function::calculate(const std::vector<bool> &values) const throw(std::
 
 	if(pimpl -> m_execType == THREE)
 		return pimpl -> m_root -> exec(values);
-	else if(pimpl -> m_execType == LIST_OF_MONOMS)
+	else if(pimpl -> m_execType == LIST_OF_MONOMS || pimpl -> m_execType == BDD)
 	{
 		std::size_t size = values.size();
 		if(!pimpl -> m_monoms.empty())
@@ -643,7 +656,10 @@ bool bcc::Function::calculate(const std::vector<bool> &values) const throw(std::
 			if(values[i])
 				v[i] = true;
 
-		return execListOfMonoms(pimpl, v);
+		if(pimpl -> m_execType == LIST_OF_MONOMS)
+			return execListOfMonoms(pimpl, v);
+		else
+			return execBDD(pimpl, v);
 	}
 	else
 		return execMap(pimpl, values);
@@ -671,6 +687,8 @@ bool bcc::Function::calculate(const boost::dynamic_bitset<> &values) const throw
 
 		return execListOfMonoms(pimpl, values);
 	}
+	else if(pimpl -> m_execType == BDD)
+		return execBDD(pimpl, values);
 	else
 		return execMap(pimpl, values);
 }

@@ -6,6 +6,7 @@ set(SOURCES
     Expr.cpp
     Const.cpp
     Var.cpp
+    BDD.cpp
     BoolCalc.cpp
 )
 

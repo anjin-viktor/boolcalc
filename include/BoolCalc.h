@@ -20,6 +20,7 @@ namespace bcc
 			{
 				THREE = 0,
 				LIST_OF_MONOMS,
+				BDD,
 				MAP
 			};
 
