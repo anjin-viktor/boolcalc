@@ -1,5 +1,14 @@
 #include "BDD.h"
 #include <iostream>
+#include <limits>
+
+enum DecompositionType
+{
+	None,
+	MaxSpeed,
+	MinData
+};
+
 
 static std::size_t findMaxFreqVar(const std::list<Monom> &monoms)
 {
@@ -20,6 +29,39 @@ static std::size_t findMaxFreqVar(const std::list<Monom> &monoms)
 }
 
 
+static std::size_t getVarFromMinMonom(const std::list<Monom> &monoms)
+{
+	std::list<Monom> shortestMonoms;
+
+	std::list<Monom>::const_iterator itr = monoms.begin();
+	std::size_t currSize = std::numeric_limits<std::size_t>::max();
+
+	for(; itr != monoms.end(); itr++)
+		if(std::get<0>(*itr).count() + std::get<1>(*itr).count() < currSize)
+		{
+			shortestMonoms.clear();
+			shortestMonoms.push_back(*itr);
+			currSize = std::get<0>(*itr).count() + std::get<1>(*itr).count();
+		}
+		else if(std::get<0>(*itr).count() + std::get<1>(*itr).count() == currSize)
+		{
+			shortestMonoms.push_back(*itr);
+		}
+
+	return findMaxFreqVar(shortestMonoms);
+}
+
+
+static std::size_t getDecomposVarId(const std::list<Monom> &monoms, DecompositionType type)
+{
+	if(type == MaxSpeed)
+		return getVarFromMinMonom(monoms);
+	else
+		return findMaxFreqVar(monoms);
+}
+
+
+
 bcc::BDDNode *createNode(const std::list<Monom> &monoms, bool constValue)
 {
 	if(monoms.empty())
@@ -33,7 +75,7 @@ bcc::BDDNode *createNode(const std::list<Monom> &monoms, bool constValue)
 		return pterm;
 	}
 
-	std::size_t pos = findMaxFreqVar(monoms);
+	std::size_t pos = getDecomposVarId(monoms, MinData);
 	std::list<Monom> fixTrue, fixFalse;
 	bool constFixTrue = constValue;
 	bool constFixFalse = constValue;
