@@ -621,6 +621,13 @@ bcc::Function::Function(const std::vector<bool> &serializeData)
 }
 
 
+bcc::Function::Function(const bcc::Function &obj)
+{
+	m_pimpl = new FunctionCalculatorImpl;
+	*((FunctionCalculatorImpl *) m_pimpl) = *((FunctionCalculatorImpl *)obj.m_pimpl);
+}
+
+
 
 bcc::Function::~Function()
 {

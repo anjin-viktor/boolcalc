@@ -26,6 +26,7 @@ namespace bcc
 
 			Function(const std::string &expression, ExecutionType type = THREE, int monomSize = -1);
 			Function(const std::vector<bool> &serializeData);
+			Function(const Function &);
 			virtual ~Function();
 
 			const Function &operator = (const Function &);
