@@ -630,15 +630,21 @@ bcc::Function::Function(const std::vector<bool> &serializeData)
 
 bcc::Function::Function(const bcc::Function &obj)
 {
-	m_pimpl = new FunctionCalculatorImpl;
-	*((FunctionCalculatorImpl *) m_pimpl) = *((FunctionCalculatorImpl *)obj.m_pimpl);
+	if(obj.m_pimpl)
+	{
+		m_pimpl = new FunctionCalculatorImpl;
+		*((FunctionCalculatorImpl *) m_pimpl) = *((FunctionCalculatorImpl *)obj.m_pimpl);
+	}
+	else
+		m_pimpl = NULL;
 }
 
 
 
 bcc::Function::~Function()
 {
-	delete (FunctionCalculatorImpl *) m_pimpl;
+	if(m_pimpl)
+		delete (FunctionCalculatorImpl *) m_pimpl;
 }
 
 const bcc::Function &bcc::Function::operator = (const Function &obj)
