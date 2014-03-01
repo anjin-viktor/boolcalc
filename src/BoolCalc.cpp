@@ -489,6 +489,13 @@ bool execBDD(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &value
 	return pimpl -> m_pBDD -> exec(values);
 }
 
+
+bcc::Function::Function()
+{
+	m_pimpl = NULL;
+}
+
+
 bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionType type, int monomSize)
 {
 	std::string expr = expression;
@@ -647,7 +654,7 @@ bool bcc::Function::calculate(const std::vector<bool> &values) const throw(std::
 {
 	FunctionCalculatorImpl *pimpl = (FunctionCalculatorImpl *) m_pimpl;
 
-	if(!pimpl -> m_root)
+	if(pimpl == NULL || !pimpl -> m_root)
 		throw std::runtime_error("expression is empty");
 
 	if(pimpl -> m_execType == THREE)
