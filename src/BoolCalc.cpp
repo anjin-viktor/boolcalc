@@ -506,12 +506,11 @@ bcc::Function::Function()
 
 bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionType type, int monomSize)
 {
-	std::cerr << "f1\n";
 	std::string expr = expression;
 	BoolExprParser<std::string::iterator> parser;
 	std::string::iterator itr = expr.begin();
 	bool res = boost::spirit::qi::parse(itr, expr.end(), parser);
-	std::cerr << "f2\n";
+
 	if(!res || itr != expr.end())
 		throw std::runtime_error("expression `" + expression + "` is incorrect");
 
@@ -520,10 +519,9 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 
 	pimpl -> m_root = parser.m_root;
 	pimpl -> m_execType = type;
-	std::cerr << "f3\n";
+
 	if(type == LIST_OF_MONOMS || type == BDD)
 	{
-			std::cerr << "f4\n";
 		pimpl -> m_constValue = false;
 		std::size_t bitsSize = 0;
 		getBitsSize(pimpl -> m_root, bitsSize);
@@ -531,7 +529,6 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 
 
 		std::list<Monom>::iterator itr = pimpl -> m_monoms.begin();
-	std::cerr << "f5\n";
 		for(;itr != pimpl -> m_monoms.end();)
 		{
 			std::size_t n = 0;
@@ -565,7 +562,6 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 				std::get<1>(*itr).resize(monomSize);
 			}
 		}
-	std::cerr << "f6\n";
 		itr = pimpl -> m_monoms.begin();
 
 		for(;itr != pimpl -> m_monoms.end(); )
@@ -585,12 +581,10 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 			else
 				itr++;
 		}
-	std::cerr << "f7\n";
 		if(type == BDD)
 		{
 			pimpl -> m_pBDD.reset(new bcc::BDD(pimpl -> m_monoms, pimpl -> m_constValue));
 		}
-	std::cerr << "f8\n";
 	}
 	else if(type == MAP)
 	{
@@ -614,7 +608,6 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 
 		pimpl -> m_pBDDDf.reset(new bcc::BDDCalculator(df));
 	}
-	std::cerr << "f9\n";
 }
 
 
