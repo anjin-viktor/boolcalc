@@ -23,7 +23,7 @@ struct FunctionCalculatorImpl
 	bcc::Function::ExecutionType                                   m_execType;
 	std::pair<std::vector<std::size_t>, std::vector<bool> >        m_values;
 	std::auto_ptr<bcc::BDD>                                        m_pBDD;
-	std::auto_ptr<BDDCalculator>                                   m_pBDDDf;
+	std::auto_ptr<bcc::BDDCalculator>                              m_pBDDDf;
 };
 
 
@@ -601,7 +601,7 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 	}
 	else if(type == BDD_DF)
 	{
-		DisForm df = DisForm::createFromStr(expression);
+		bcc::DisForm df = bcc::DisForm::createFromStr(expression);
 
 		if(monomSize > 0)
 		{
@@ -612,7 +612,7 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 			}
 		}
 
-		pimpl -> m_pBDDDf.reset(new BDDCalculator(df));
+		pimpl -> m_pBDDDf.reset(new bcc::BDDCalculator(df));
 	}
 	std::cerr << "f9\n";
 }

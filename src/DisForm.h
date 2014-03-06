@@ -6,6 +6,9 @@
 
 #include <boost/dynamic_bitset.hpp>
 
+namespace bcc
+{
+
 class Conjunct
 {
 	public:
@@ -60,6 +63,8 @@ class BDDCalculator
 		Root        *m_proot;
 		
 };
+
+}
 
 
 

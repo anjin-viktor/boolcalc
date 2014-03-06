@@ -2,6 +2,8 @@
 
 #include <boost/lexical_cast.hpp>
 
+using namespace bcc;
+
 std::string DisForm::toString() const
 {
 	std::string res;
