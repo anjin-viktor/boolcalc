@@ -666,4 +666,102 @@ BOOST_AUTO_TEST_CASE(expr_1_bdd)
 
 
 
+BOOST_AUTO_TEST_CASE(expr_bdd_df)
+{
+	bcc::Function f(
+		"x14 & x11 & x8 & x5 & x2 & x1 & x0 & !x13 & !x10 & !x7 & !x6 & !x4 & !x3 | "
+		"x12 & x10 & x6 & x3 & x2 & x1 & !x13 & !x11 & !x8 & !x7 & !x5 & !x4 & !x0 | "
+		"x12 & x11 & x8 & x5 & x4 & x3 & x1 & x0 & !x10 & !x9 & !x7 & !x6 & !x2 | "
+		"x14 & x13 & x10 & x6 & x5 & x3 & x2 & x1 & !x11 & !x9 & !x8 & !x4 & !x0 | "
+		"x14 & x11 & x10 & x9 & x7 & x6 & x5 & x4 & x2 & !x12 & !x8 & !x3 & !x1 & !x0 | "
+		"x14 & x11 & x10 & x8 & x7 & x6 & x5 & x3 & x0 & !x13 & !x4 & !x2 & !x1 | "
+		"x13 & x12 & x10 & x9 & x8 & x7 & x5 & x2 & x1 & x0 & !x6 & !x4 & !x3 | "
+		"x14 & x13 & x10 & x9 & x8 & x6 & x3 & x2 & x1 & x0 & !x12 & !x7 & !x5 & !x4 | "
+		"x13 & x12 & x10 & x8 & x5 & x4 & x3 & x2 & !x9 & !x7 & !x6 & !x1 & !x0 | "
+		"x14 & x13 & x12 & x11 & x9 & x6 & x5 & x4 & x3 & x0 & !x8 & !x7 & !x2 & !x1 |"
+		"x14 & x13 & x11 & x8 & x7 & x6 & x5 & x2 & !x12 & !x10 & !x4 & !x3 & !x1 & !x0 | "
+		"x14 & x12 & x8 & x7 & x6 & x3 & !x13 & !x11 & !x10 & !x5 & !x4 & !x2 & !x1 & !x0 |"
+		"x10 & x9 & x7 & x4 & x0 & !x12 & !x11 & !x6 & !x5 & !x3 & !x2 & !x1 | "
+		"x12 & x11 & x10 & x9 & x6 & x2 & !x14 & !x8 & !x5 & !x4 & !x3 & !x1 & !x0 | "
+		"x13 & x12 & x11 & x10 & x7 & x3 & !x8 & !x6 & !x5 & !x4 & !x2 & !x1 & !x0 |"
+		"x13 & x9 & x5 & x1 & x0 & !x11 & !x10 & !x8 & !x7 & !x6 & !x3 & !x2 | "
+		"x7 & x3 & x2 & x0 & !x13 & !x12 & !x10 & !x9 & !x8 & !x6 & !x5 & !x4 & !x1 | "
+		"x8 & x7 & x5 & x2 & x1 & x0 & !x14 & !x11 & !x10 & !x9 & !x6 & !x4 & !x3 | "
+		"x10 & x8 & x5 & x4 & x3 & x2 & x1 & x0 & !x13 & !x12 & !x9 & !x7 & !x6 | "
+		"x10 & x9 & x8 & x7 & x6 & x5 & !x14 & !x12 & !x11 & !x3 & !x2 & !x1 & !x0 |"
+		"x13 & x10 & x9 & x8 & x2 & x1 & !x7 & !x6 & !x5 & !x4 & !x3 & !x0 | "
+		"    x14 & x13 & x12 & x10 & x4 & x3 & x0 & !x9 & !x8 & !x7 & !x6 & !x5 & !x2 & !x1 | "
+		"    x14 & x13 & x6 & x2 & x0 & !x11 & !x10 & !x9 & !x8 & !x7 & !x4 & !x3 & !x1 |"
+		"     x14 & x8 & x7 & x4 & x2 & x0 & !x13 & !x12 & !x10 & !x9 & !x6 & !x5 & !x3 & !x1 |"
+		"      x10 & x9 & x6 & x4 & x2 & !x14 & !x12 & !x11 & !x7 & !x5 & !x3 & !x1 & !x0 | "
+		"x12 & x8 & x6 & x4 & x0 & !x13 & !x10 & !x9 & !x7 & !x5 & !x3 & !x2 & !x1 |"
+		" x12 & x10 & x8 & x4 & x3 & x1 & !x13 & !x11 & !x9 & !x6 & !x5 & !x2 & !x0 |"
+		"  x14 & x12 & x10 & x6 & x5 & x3 & x0 & !x11 & !x9 & !x8 & !x4 & !x2 & !x1 |"
+		"   x13 & x9 & x8 & x6 & x3 & !x14 & !x12 & !x11 & !x7 & !x5 & !x4 & !x2 & !x1 & !x0 | "
+		"   x11 & x8 & x5 & x1 & !x14 & !x13 & !x12 & !x9 & !x7 & !x6 & !x4 & !x3 & !x2 & !x0 | "
+		"   x12 & x11 & x9 & x6 & x2 & x0 & !x13 & !x10 & !x8 & !x5 & !x4 & !x3 & !x1 | "
+		"   x13 & x12 & x7 & x3 & x1 & !x14 & !x11 & !x9 & !x8 & !x6 & !x5 & !x4 & !x2 & !x0 | "
+		"   x12 & x9 & x5 & x3 & x1 & !x13 & !x11 & !x10 & !x7 & !x6 & !x4 & !x2 & !x0 |" 
+		"   x13 & x9 & x7 & x5 & x2 & x0 & !x12 & !x10 & !x8 & !x6 & !x4 & !x3 & !x1"
+		, bcc::Function::BDD_DF);
+
+
+	bcc::Function f1(
+		"x14 & x11 & x8 & x5 & x2 & x1 & x0 & !x13 & !x10 & !x7 & !x6 & !x4 & !x3 | "
+		"x12 & x10 & x6 & x3 & x2 & x1 & !x13 & !x11 & !x8 & !x7 & !x5 & !x4 & !x0 | "
+		"x12 & x11 & x8 & x5 & x4 & x3 & x1 & x0 & !x10 & !x9 & !x7 & !x6 & !x2 | "
+		"x14 & x13 & x10 & x6 & x5 & x3 & x2 & x1 & !x11 & !x9 & !x8 & !x4 & !x0 | "
+		"x14 & x11 & x10 & x9 & x7 & x6 & x5 & x4 & x2 & !x12 & !x8 & !x3 & !x1 & !x0 | "
+		"x14 & x11 & x10 & x8 & x7 & x6 & x5 & x3 & x0 & !x13 & !x4 & !x2 & !x1 | "
+		"x13 & x12 & x10 & x9 & x8 & x7 & x5 & x2 & x1 & x0 & !x6 & !x4 & !x3 | "
+		"x14 & x13 & x10 & x9 & x8 & x6 & x3 & x2 & x1 & x0 & !x12 & !x7 & !x5 & !x4 | "
+		"x13 & x12 & x10 & x8 & x5 & x4 & x3 & x2 & !x9 & !x7 & !x6 & !x1 & !x0 | "
+		"x14 & x13 & x12 & x11 & x9 & x6 & x5 & x4 & x3 & x0 & !x8 & !x7 & !x2 & !x1 |"
+		"x14 & x13 & x11 & x8 & x7 & x6 & x5 & x2 & !x12 & !x10 & !x4 & !x3 & !x1 & !x0 | "
+		"x14 & x12 & x8 & x7 & x6 & x3 & !x13 & !x11 & !x10 & !x5 & !x4 & !x2 & !x1 & !x0 |"
+		"x10 & x9 & x7 & x4 & x0 & !x12 & !x11 & !x6 & !x5 & !x3 & !x2 & !x1 | "
+		"x12 & x11 & x10 & x9 & x6 & x2 & !x14 & !x8 & !x5 & !x4 & !x3 & !x1 & !x0 | "
+		"x13 & x12 & x11 & x10 & x7 & x3 & !x8 & !x6 & !x5 & !x4 & !x2 & !x1 & !x0 |"
+		"x13 & x9 & x5 & x1 & x0 & !x11 & !x10 & !x8 & !x7 & !x6 & !x3 & !x2 | "
+		"x7 & x3 & x2 & x0 & !x13 & !x12 & !x10 & !x9 & !x8 & !x6 & !x5 & !x4 & !x1 | "
+		"x8 & x7 & x5 & x2 & x1 & x0 & !x14 & !x11 & !x10 & !x9 & !x6 & !x4 & !x3 | "
+		"x10 & x8 & x5 & x4 & x3 & x2 & x1 & x0 & !x13 & !x12 & !x9 & !x7 & !x6 | "
+		"x10 & x9 & x8 & x7 & x6 & x5 & !x14 & !x12 & !x11 & !x3 & !x2 & !x1 & !x0 |"
+		"x13 & x10 & x9 & x8 & x2 & x1 & !x7 & !x6 & !x5 & !x4 & !x3 & !x0 | "
+		"    x14 & x13 & x12 & x10 & x4 & x3 & x0 & !x9 & !x8 & !x7 & !x6 & !x5 & !x2 & !x1 | "
+		"    x14 & x13 & x6 & x2 & x0 & !x11 & !x10 & !x9 & !x8 & !x7 & !x4 & !x3 & !x1 |"
+		"     x14 & x8 & x7 & x4 & x2 & x0 & !x13 & !x12 & !x10 & !x9 & !x6 & !x5 & !x3 & !x1 |"
+		"      x10 & x9 & x6 & x4 & x2 & !x14 & !x12 & !x11 & !x7 & !x5 & !x3 & !x1 & !x0 | "
+		"x12 & x8 & x6 & x4 & x0 & !x13 & !x10 & !x9 & !x7 & !x5 & !x3 & !x2 & !x1 |"
+		" x12 & x10 & x8 & x4 & x3 & x1 & !x13 & !x11 & !x9 & !x6 & !x5 & !x2 & !x0 |"
+		"  x14 & x12 & x10 & x6 & x5 & x3 & x0 & !x11 & !x9 & !x8 & !x4 & !x2 & !x1 |"
+		"   x13 & x9 & x8 & x6 & x3 & !x14 & !x12 & !x11 & !x7 & !x5 & !x4 & !x2 & !x1 & !x0 | "
+		"   x11 & x8 & x5 & x1 & !x14 & !x13 & !x12 & !x9 & !x7 & !x6 & !x4 & !x3 & !x2 & !x0 | "
+		"   x12 & x11 & x9 & x6 & x2 & x0 & !x13 & !x10 & !x8 & !x5 & !x4 & !x3 & !x1 | "
+		"   x13 & x12 & x7 & x3 & x1 & !x14 & !x11 & !x9 & !x8 & !x6 & !x5 & !x4 & !x2 & !x0 | "
+		"   x12 & x9 & x5 & x3 & x1 & !x13 & !x11 & !x10 & !x7 & !x6 & !x4 & !x2 & !x0 | "
+		"   x13 & x9 & x7 & x5 & x2 & x0 & !x12 & !x10 & !x8 & !x6 & !x4 & !x3 & !x1");
+
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("000011110000111"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("000011110000111"))));
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("001111101001110"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("001111101001110"))));
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("000111110101000"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("000111110101000"))));
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("001000100100010"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("001000100100010"))));
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("000000000000000"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("000000000000000"))));
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("110101010001111"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("110101010001111"))));
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("000101011111010"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("000101011111010"))));
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("100000000011101"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("100000000011101"))));
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("001100111111000"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("001100111111000"))));
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("000001111100000"))), 
+	   	             f1.calculate(boost::dynamic_bitset<>(std::string("000001111100000"))));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

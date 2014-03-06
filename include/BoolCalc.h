@@ -21,6 +21,7 @@ namespace bcc
 				THREE = 0,
 				LIST_OF_MONOMS,
 				BDD,
+				BDD_DF, //Only for DF
 				MAP
 			};
 

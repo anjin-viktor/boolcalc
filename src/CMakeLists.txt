@@ -8,6 +8,7 @@ set(SOURCES
     Var.cpp
     BDD.cpp
     BoolCalc.cpp
+    DisForm.cpp
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include/)

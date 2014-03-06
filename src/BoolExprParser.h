@@ -34,7 +34,7 @@ class BoolExprParser: public boost::spirit::qi::grammar<Iterator>
                     (*qi::space >>  '|' >> *qi::space >> term) [boost::bind(&BoolExprParser::Or_, this)]
                     | 
                     (*qi::space >>	'+'  >> *qi::space >> term) [boost::bind(&BoolExprParser::Xor_, this)]
-                );
+                ) >> *qi::space;
 
 			term       = *qi::space >> factor >> *( 
                     (*qi::space >> '&' >> *qi::space >> factor) [boost::bind(&BoolExprParser::And_, this)]

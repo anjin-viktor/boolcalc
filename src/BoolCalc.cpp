@@ -3,6 +3,7 @@
 #include "Node.h"
 #include "BoolExprParser.h"
 #include "BDD.h"
+#include "DisForm.h"
 
 #include <boost/spirit/include/qi.hpp>
 
@@ -22,6 +23,7 @@ struct FunctionCalculatorImpl
 	bcc::Function::ExecutionType                                   m_execType;
 	std::pair<std::vector<std::size_t>, std::vector<bool> >        m_values;
 	std::auto_ptr<bcc::BDD>                                        m_pBDD;
+	std::auto_ptr<BDDCalculator>                                   m_pBDDDf;
 };
 
 
@@ -490,6 +492,12 @@ bool execBDD(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &value
 }
 
 
+bool execBDDDf(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &values)
+{
+	return pimpl -> m_pBDDDf -> calculate(values);
+}
+
+
 bcc::Function::Function()
 {
 	m_pimpl = NULL;
@@ -498,11 +506,12 @@ bcc::Function::Function()
 
 bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionType type, int monomSize)
 {
+	std::cerr << "f1\n";
 	std::string expr = expression;
 	BoolExprParser<std::string::iterator> parser;
 	std::string::iterator itr = expr.begin();
 	bool res = boost::spirit::qi::parse(itr, expr.end(), parser);
-
+	std::cerr << "f2\n";
 	if(!res || itr != expr.end())
 		throw std::runtime_error("expression `" + expression + "` is incorrect");
 
@@ -511,9 +520,10 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 
 	pimpl -> m_root = parser.m_root;
 	pimpl -> m_execType = type;
-
+	std::cerr << "f3\n";
 	if(type == LIST_OF_MONOMS || type == BDD)
 	{
+			std::cerr << "f4\n";
 		pimpl -> m_constValue = false;
 		std::size_t bitsSize = 0;
 		getBitsSize(pimpl -> m_root, bitsSize);
@@ -521,7 +531,7 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 
 
 		std::list<Monom>::iterator itr = pimpl -> m_monoms.begin();
-
+	std::cerr << "f5\n";
 		for(;itr != pimpl -> m_monoms.end();)
 		{
 			std::size_t n = 0;
@@ -555,7 +565,7 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 				std::get<1>(*itr).resize(monomSize);
 			}
 		}
-
+	std::cerr << "f6\n";
 		itr = pimpl -> m_monoms.begin();
 
 		for(;itr != pimpl -> m_monoms.end(); )
@@ -575,11 +585,12 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 			else
 				itr++;
 		}
-
+	std::cerr << "f7\n";
 		if(type == BDD)
 		{
 			pimpl -> m_pBDD.reset(new bcc::BDD(pimpl -> m_monoms, pimpl -> m_constValue));
 		}
+	std::cerr << "f8\n";
 	}
 	else if(type == MAP)
 	{
@@ -588,6 +599,22 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 		createTable(table, pimpl -> m_root);
 		pimpl -> m_values = table;
 	}
+	else if(type == BDD_DF)
+	{
+		DisForm df = DisForm::createFromStr(expression);
+
+		if(monomSize > 0)
+		{
+			for(std::size_t i=0; i<df.m_conjuncts.size(); i++)
+			{
+				df.m_conjuncts[i].m_pos.resize(monomSize);
+				df.m_conjuncts[i].m_neg.resize(monomSize);
+			}
+		}
+
+		pimpl -> m_pBDDDf.reset(new BDDCalculator(df));
+	}
+	std::cerr << "f9\n";
 }
 
 
@@ -681,6 +708,19 @@ bool bcc::Function::calculate(const std::vector<bool> &values) const throw(std::
 		else
 			return execBDD(pimpl, v);
 	}
+	else if(pimpl -> m_execType == BDD_DF)
+	{
+		std::size_t size = values.size();
+		if(!pimpl -> m_monoms.empty())
+			size = std::get<0>(*(pimpl -> m_monoms.begin())).size();
+
+		boost::dynamic_bitset<> v(size);
+		for(std::size_t i=0; i<std::min(values.size(), size); i++)
+			if(values[i])
+				v[i] = true;
+
+		return execBDDDf(pimpl, v);
+	}
 	else
 		return execMap(pimpl, values);
 }
@@ -709,6 +749,8 @@ bool bcc::Function::calculate(const boost::dynamic_bitset<> &values) const throw
 	}
 	else if(pimpl -> m_execType == BDD)
 		return execBDD(pimpl, values);
+	else if(pimpl -> m_execType == BDD_DF)
+		return execBDDDf(pimpl, values);
 	else
 		return execMap(pimpl, values);
 }
