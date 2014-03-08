@@ -1,7 +1,7 @@
 boolcalc
 ========
 
-BoolCalc is a library for calculate boolean expressions.
+BoolCalc is a C++ library intended for parsing and calculate boolean expressions.
 
 
 ##USAGE
@@ -11,7 +11,7 @@ BoolCalc is a library for calculate boolean expressions.
 	...
 	...
 
-	bcc::Function func(""x1 & x0 | (x2 + 1)"");
+	bcc::Function func("x1 & x0 | (x2 + 1)");
 	static const bool v_[3] = {true, true, false};
 	bool res = func.calculate(std::vector<bool>(v_, v_ + sizeof(v_) / sizeof(v_[0])));
 
