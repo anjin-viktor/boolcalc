@@ -30,7 +30,7 @@ class BoolExprParser: public boost::spirit::qi::grammar<Iterator>
 			namespace phoenix = boost::phoenix;
 			using phoenix::push_front;
 
-			expression = *qi::space >> term >> *( 
+			expression = *qi::space >> -term >> *( 
                     (*qi::space >>  '|' >> *qi::space >> term) [boost::bind(&BoolExprParser::Or_, this)]
                     | 
                     (*qi::space >>	'+'  >> *qi::space >> term) [boost::bind(&BoolExprParser::Xor_, this)]

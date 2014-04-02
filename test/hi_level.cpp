@@ -764,4 +764,17 @@ BOOST_AUTO_TEST_CASE(expr_bdd_df)
 	   	             f1.calculate(boost::dynamic_bitset<>(std::string("000001111100000"))));
 }
 
+
+
+
+BOOST_AUTO_TEST_CASE(expr_empty)
+{
+	bcc::Function f("");
+
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("111111"))), 0);
+	BOOST_CHECK_EQUAL(f.calculate(boost::dynamic_bitset<>(std::string("0"))), 0);
+}
+
+
+
 BOOST_AUTO_TEST_SUITE_END()

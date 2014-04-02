@@ -680,11 +680,17 @@ bool bcc::Function::calculate(const std::vector<bool> &values) const throw(std::
 {
 	FunctionCalculatorImpl *pimpl = (FunctionCalculatorImpl *) m_pimpl;
 
-	if(pimpl == NULL || !pimpl -> m_root)
+
+	if(pimpl == NULL)
 		throw std::runtime_error("expression is empty");
 
 	if(pimpl -> m_execType == THREE)
+	{
+		if(!pimpl -> m_root)
+			return false;
+
 		return pimpl -> m_root -> exec(values);
+	}
 	else if(pimpl -> m_execType == LIST_OF_MONOMS || pimpl -> m_execType == BDD)
 	{
 		std::size_t size = values.size();
@@ -727,7 +733,12 @@ bool bcc::Function::calculate(const boost::dynamic_bitset<> &values) const throw
 		throw std::runtime_error("expression is empty");
 
 	if(pimpl -> m_execType == THREE)
+	{
+		if(!pimpl -> m_root)
+			return false;
+
 		return pimpl -> m_root -> exec(values);
+	}
 	else if(pimpl -> m_execType == LIST_OF_MONOMS)
 	{
 		if(!(pimpl -> m_monoms.empty()) && values.size() != std::get<0>(*(pimpl -> m_monoms.begin())).size())
