@@ -9,6 +9,7 @@ set(SOURCES
     BDD.cpp
     BoolCalc.cpp
     DisForm.cpp
+    MonomsList.cpp
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include/)

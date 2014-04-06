@@ -4,6 +4,7 @@
 #include "BoolExprParser.h"
 #include "BDD.h"
 #include "DisForm.h"
+#include "MonomsList.cpp"
 
 #include <boost/spirit/include/qi.hpp>
 
@@ -24,6 +25,7 @@ struct FunctionCalculatorImpl
 	std::pair<std::vector<std::size_t>, std::vector<bool> >        m_values;
 	std::auto_ptr<bcc::BDD>                                        m_pBDD;
 	std::auto_ptr<bcc::BDDCalculator>                              m_pBDDDf;
+	std::auto_ptr<bcc::MonomsList>                                 m_pmonomsWithAllVarsCalculator;
 };
 
 
@@ -474,11 +476,29 @@ static void createTable(std::pair<std::vector<std::size_t>, std::vector<bool> > 
 }
 
 
-template <typename T>
-static bool execMap(FunctionCalculatorImpl *pimpl, const T& values)
+
+static bool execMap(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &values)
 {
 	std::size_t position = 0;
-	for(std::size_t i=0; i<pimpl -> m_values.first.size(); i++)
+
+	if(values.size() == pimpl -> m_values.first.size())
+	  position = values.to_ulong();
+	else
+	{
+	  for(std::size_t i=0; i<pimpl -> m_values.first.size(); i++)
+		if(values[pimpl -> m_values.first[i]])
+			position |= 1 << i;
+	}
+
+	return pimpl -> m_values.second[position];
+}
+
+
+static bool execMap(FunctionCalculatorImpl *pimpl, const std::vector<bool> &values)
+{
+	std::size_t position = 0;
+
+	  for(std::size_t i=0; i<pimpl -> m_values.first.size(); i++)
 		if(values[pimpl -> m_values.first[i]])
 			position |= 1 << i;
 
@@ -495,6 +515,12 @@ bool execBDD(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &value
 bool execBDDDf(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &values)
 {
 	return pimpl -> m_pBDDDf -> calculate(values);
+}
+
+
+bool execMonomsWithAllVars(FunctionCalculatorImpl *pimpl, const boost::dynamic_bitset<> &values)
+{
+	return pimpl -> m_pmonomsWithAllVarsCalculator -> calculate(values);
 }
 
 
@@ -608,6 +634,23 @@ bcc::Function::Function(const std::string &expression, bcc::Function::ExecutionT
 
 		pimpl -> m_pBDDDf.reset(new bcc::BDDCalculator(df));
 	}
+	else if(type == LIST_OF_MONOMS_WITH_ALL_VARS)
+	{
+		bcc::DisForm df = bcc::DisForm::createFromStr(expression);
+
+		if(monomSize > 0)
+		{
+			for(std::size_t i=0; i<df.m_conjuncts.size(); i++)
+			{
+				df.m_conjuncts[i].m_pos.resize(monomSize);
+				df.m_conjuncts[i].m_neg.resize(monomSize);
+			}
+		}
+
+		pimpl -> m_pmonomsWithAllVarsCalculator.reset(new bcc::MonomsList);
+		pimpl -> m_pmonomsWithAllVarsCalculator -> init(df);
+	}
+  
 }
 
 
@@ -720,6 +763,20 @@ bool bcc::Function::calculate(const std::vector<bool> &values) const throw(std::
 
 		return execBDDDf(pimpl, v);
 	}
+	else if(pimpl -> m_execType = LIST_OF_MONOMS_WITH_ALL_VARS)
+	{
+		std::size_t size = values.size();
+		if(!pimpl -> m_monoms.empty())
+			size = std::get<0>(*(pimpl -> m_monoms.begin())).size();
+
+		boost::dynamic_bitset<> v(size);
+		for(std::size_t i=0; i<std::min(values.size(), size); i++)
+			if(values[i])
+				v[i] = true;
+
+
+		return execMonomsWithAllVars(pimpl, v);
+	}
 	else
 		return execMap(pimpl, values);
 }
@@ -755,6 +812,8 @@ bool bcc::Function::calculate(const boost::dynamic_bitset<> &values) const throw
 		return execBDD(pimpl, values);
 	else if(pimpl -> m_execType == BDD_DF)
 		return execBDDDf(pimpl, values);
+	else if(pimpl -> m_execType == LIST_OF_MONOMS_WITH_ALL_VARS)
+		return execMonomsWithAllVars(pimpl, values);
 	else
 		return execMap(pimpl, values);
 }

@@ -22,7 +22,8 @@ namespace bcc
 				LIST_OF_MONOMS,
 				BDD,
 				BDD_DF, //Only for DF
-				MAP
+				MAP,
+				LIST_OF_MONOMS_WITH_ALL_VARS
 			};
 
 			Function();
