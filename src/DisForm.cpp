@@ -248,7 +248,7 @@ DisForm DisForm::createFromStr(const std::string &str)
 	std::size_t pos = 0;
 	std::size_t monomSize = 0;
 
-	for(;pos <= str.length();)
+	for(;pos < str.length();)
 	{
 		std::size_t monomEndPos = str.find('|', pos);
 		if(monomEndPos > str.length())
