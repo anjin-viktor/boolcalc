@@ -17,5 +17,8 @@ void MonomsList::init(const DisForm &df)
 
 bool MonomsList::calculate(const boost::dynamic_bitset<> &bs) const
 {
+  if(m_monoms.empty())
+    return false;
+
   return m_monoms.find(bs) != m_monoms.end();
 }
